@@ -26,15 +26,15 @@ jobs:
             echo "SERVER_PASSWORD is missing"
             exit 1
           fi
-          echo "All secrets exist"
+          echo "All required secrets exist"
 
       - name: Deploy to VPS using SSH password
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_IP }}
+          host: 192.241.128.37
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          port: 22
+          port: "22"
           script: |
             cd /var/www/laravel-docker
             ./deploy-docker.sh
