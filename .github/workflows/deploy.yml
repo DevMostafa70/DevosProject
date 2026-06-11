@@ -12,21 +12,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check required secrets
+      - name: Check password secret
         run: |
-          if [ -z "${{ secrets.SERVER_IP }}" ]; then
-            echo "SERVER_IP is missing"
-            exit 1
-          fi
-          if [ -z "${{ secrets.SERVER_USER }}" ]; then
-            echo "SERVER_USER is missing"
-            exit 1
-          fi
           if [ -z "${{ secrets.SERVER_PASSWORD }}" ]; then
             echo "SERVER_PASSWORD is missing"
             exit 1
           fi
-          echo "All required secrets exist"
+          echo "Password secret exists"
 
       - name: Install sshpass
         run: |
@@ -35,24 +27,20 @@ jobs:
 
       - name: Test SSH connection
         env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           sshpass -p "$SERVER_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o PreferredAuthentications=password \
             -o PubkeyAuthentication=no \
-            "$SERVER_USER@$SERVER_IP" "echo SSH password login successful"
+            deploy@192.241.128.37 "echo SSH password login successful"
 
       - name: Run Docker deployment script on VPS
         env:
-          SERVER_IP: ${{ secrets.SERVER_IP }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
         run: |
           sshpass -p "$SERVER_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o PreferredAuthentications=password \
             -o PubkeyAuthentication=no \
-            "$SERVER_USER@$SERVER_IP" "cd /var/www/laravel-docker && ./deploy-docker.sh"
+            deploy@192.241.128.37 "cd /var/www/laravel-docker && ./deploy-docker.sh"
