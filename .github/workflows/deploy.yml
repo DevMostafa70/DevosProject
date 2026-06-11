@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -11,18 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup SSH connection
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add VPS to known hosts
+      - name: Check secrets
         run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY_B64 }}" ]; then
+            echo "SSH_PRIVATE_KEY_B64 is missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_IP }}" ]; then
+            echo "SERVER_IP is missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_USER }}" ]; then
+            echo "SERVER_USER is missing"
+            exit 1
+          fi
+          echo "All secrets exist"
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
       - name: Run Docker deployment script on VPS
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd /var/www/laravel-docker && ./deploy-docker.sh"
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd /var/www/laravel-docker && ./deploy-docker.sh"
